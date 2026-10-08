@@ -31,3 +31,13 @@ Every angle in an equilateral triangle is 60°, so none of them can be 90°. In 
 | `test_negative_side_is_invalid` | `(-1,2,2)` is invalid in both functions because every side must be positive | No suggestion received | Not applicable | Reviewed against the positive-side requirement; zero is not the only non-positive invalid input. Passes. The negative's position doesn't matter because the triangle inequality also fails whenever any side is ≤ 0, so one position is enough. |
 | `test_right_isosceles_with_non_integer_hypotenuse` | `(5, 5, 5√2)` is `"Right Isosceles"` | No suggestion received | Not applicable; equality pitfall caught in review | An exact `==` check is unsuitable for this floating-point Pythagorean calculation; the spec requires tolerance-based recognition. This was a manual review finding, not a Copilot suggestion. |
 | `test_equilateral_triangle_is_not_right` | `(5,5,5)` is plain `"Equilateral"`, never Right | No suggestion received | Not applicable | Checked that the expected result follows the documented right-triangle rule and that equilateral triangles are not right. |
+
+## Acceptance Criteria (stained-glass studio)
+
+The customer's requirements, rewritten as measurable conditions. All three are checked end-to-end by [`test_acceptance.py`](test_acceptance.py), which runs `classify_triangle()` on a table of customer orders in every ordering of their sides.
+
+1. **AC1: Correct every time.** For every order in the reference table, in all 6 orderings of its sides, `classify_triangle()` returns exactly the expected label. Pass mark: 0 mismatches.
+2. **AC2: Not buildable means a message, not a crash.** For every order with a side ≤ 0 or failing the triangle inequality (including two sides summing exactly to the third), `classify_triangle()` returns `"Invalid"` and raises no exception.
+3. **AC3: Flag pieces that need reinforced corners.** A result starts with `"Right "` if and only if the sides satisfy a² + b² = c² within a relative tolerance of 1e-9. Pieces that are close to right but not right, such as `(30, 40, 50.01)`, are not flagged.
+
+Run all tests with `python -m pytest`.
