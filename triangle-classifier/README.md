@@ -17,12 +17,62 @@ classify_triangle(2, 2, 3)   # "Isosceles"
 classify_triangle(1, 2, 3)   # "Invalid" (degenerate)
 ```
 
+## How to run the tests
+
+Requires Python 3 and pytest. From the `triangle-classifier` folder:
+
+```bash
+pip install pytest
+python -m pytest -v
+```
+
+This runs both test files:
+
+- `test_triangle.py`: the unit tests.
+- `test_acceptance.py`: the acceptance test for the customer's requirements.
+
 ## Why an equilateral triangle can never be right
 
 Every angle in an equilateral triangle is 60°, so none of them can be 90°. In terms of the sides, a right triangle needs a² + a² = a², which simplifies to 2a² = a² and only holds when a = 0. A side of 0 is not a valid triangle.
 
-## Copilot Review Log
+## Equivalence classes and boundaries
 
+Each class is a group of inputs the classifier should treat the same way. Boundaries are the edges between classes, where bugs are most likely. The last column shows which test covers each one.
+
+### Validity
+
+| Class / boundary | Example | Expected | Tested in |
+| --- | --- | --- | --- |
+| All sides positive, strict triangle inequality holds | `(4, 5, 6)` | valid | unit, acceptance |
+| **Boundary:** a side is exactly 0 | `(0, 2, 2)` | `"Invalid"` | unit, acceptance (all orders) |
+| A side is negative | `(-1, 2, 2)` | `"Invalid"` | unit, acceptance (all orders) |
+| Triangle inequality clearly fails | `(5, 10, 40)` | `"Invalid"` | acceptance (all orders) |
+| **Boundary:** degenerate, two sides sum exactly to the third | `(1, 2, 3)` | `"Invalid"` | unit, acceptance (all orders) |
+| **Boundary:** just inside the triangle inequality | `(1, 2, 2.999)` | valid (`"Scalene"`) | not tested |
+
+### Shape
+
+| Class / boundary | Example | Expected | Tested in |
+| --- | --- | --- | --- |
+| All three sides equal | `(4, 4, 4)` | `"Equilateral"` | unit, acceptance |
+| Exactly two sides equal (the pair can be in any position) | `(2, 2, 3)`, `(3, 2, 2)`, `(2, 3, 2)` | `"Isosceles"` | unit (one order), acceptance (all orders) |
+| All sides different | `(4, 5, 6)` | `"Scalene"` | unit, acceptance |
+
+### Right angle
+
+| Class / boundary | Example | Expected | Tested in |
+| --- | --- | --- | --- |
+| Exact Pythagorean triple, hypotenuse in any position | `(3, 4, 5)`, `(5, 3, 4)` | `"Right Scalene"` | unit (one order), acceptance (all orders) |
+| Right triangle with floating-point sides, needs the tolerance | `(5, 5, 5√2)`, `(0.3, 0.4, 0.5)` | `"Right Isosceles"`, `"Right Scalene"` | unit, acceptance |
+| **Boundary:** near-miss, close to right but outside the tolerance | `(30, 40, 50.01)` | `"Scalene"`, not flagged | acceptance |
+| Equilateral, can never be right | `(5, 5, 5)` | `"Equilateral"` | unit |
+| Invalid sides that still satisfy a² + b² = c² | `(-3, 4, 5)` | `"Invalid"`, not `"Right …"` | acceptance |
+
+### Out of scope
+
+Non-numeric input such as `"abc"` is outside the spec, which only defines numeric sides. `classify_triangle` currently raises a `TypeError` for it.
+
+## Copilot Review Log
 
 | Test | What it checks | Copilot suggestion | Kept / edited / rejected | Why |
 | --- | --- | --- | --- | --- |
@@ -40,4 +90,9 @@ The customer's requirements, rewritten as measurable conditions. All three are c
 2. **AC2: Not buildable means a message, not a crash.** For every order with a side ≤ 0 or failing the triangle inequality (including two sides summing exactly to the third), `classify_triangle()` returns `"Invalid"` and raises no exception.
 3. **AC3: Flag pieces that need reinforced corners.** A result starts with `"Right "` if and only if the sides satisfy a² + b² = c² within a relative tolerance of 1e-9. Pieces that are close to right but not right, such as `(30, 40, 50.01)`, are not flagged.
 
-Run all tests with `python -m pytest`.
+## AI-use disclosure
+
+| Tool | What I used it for | What I verified |
+| --- | --- | --- |
+| GitHub Copilot | Generating unit test suggestions.| Mistakes to be corrected / choosing which tests generated to use.| 
+|Claude Code | Used for created the readme and tweaked bugs in copilots code.| Verified mistakes and suggestions for changes. |
